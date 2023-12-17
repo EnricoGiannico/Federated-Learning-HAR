@@ -11,6 +11,7 @@ import numpy as np
 from torch.utils.data import TensorDataset, DataLoader, Subset
 from sklearn.metrics import accuracy_score
 
+
 class Architecture(object):
     def __init__(self, model, loss_fn, optimizer):
         self.model = model
@@ -38,8 +39,7 @@ class Architecture(object):
         def perform_train_step(x, y):
             self.model.train()
             yhat = self.model(x)
-            #yhat = torch.argmax(nn.Softmax(dim=-1)(yhat), dim=1, keepdim=True).float()
-            loss = self.loss_fn(yhat, y.squeeze().long())
+            loss = self.loss_fn(yhat, y)
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
@@ -52,7 +52,7 @@ class Architecture(object):
         def perform_val_step(x,y):
             self.model.eval()
             yhat = self.model(x)
-            loss = self.loss_fn(yhat, y.squeeze().long())
+            loss = self.loss_fn(yhat, y)
             return loss.item()
 
         return perform_val_step
@@ -92,6 +92,7 @@ class Architecture(object):
     def train(self, n_epochs, seed=42):
         self.set_seed(seed)
         for epoch in range(n_epochs):
+            print(f"Starting epoch: {self.total_epochs + 1}")
             self.total_epochs += 1
             loss = self._mini_batch(validation=False)
             self.losses.append(loss)
@@ -99,41 +100,9 @@ class Architecture(object):
                 val_loss = self._mini_batch(validation=True)
                 self.val_losses.append(val_loss)
 
-'''
-for client in df['client'].unique().tolist():
-    x_tensor_list = []
-    y_tensor_list = []
-    for activity in df['activity'].loc[df['client'] == client].unique().tolist():
-        dg = df.loc[(df['client'] == client) & (df['activity'] == activity)]
-        dg['date_time'] = dg['timestamp'].apply(lambda x: convert_timestamp_to_string(x))
-        dg['date_time'] = pd.to_datetime(dg['date_time'])
-        dg['time_diff'] = dg['date_time'].shift(-1) - dg['date_time']
-        dg['time_diff'].fillna(pd.Timedelta(seconds=0), inplace=True)
-        #print(client, activity, ' :')
-        #print(len(dg))
-        dg = dg.loc[dg['time_diff'] <= pd.Timedelta(seconds=120)]
-        #print(len(dg))
-        #print('-------------')
-        sequences = []
-        for i in range(0, len(dg) - sequence_length + 1, 3):
-            sequence = dg[['x_acc', 'y_acc', 'z_acc']].iloc[i:i + sequence_length].values
-            sequences.append(sequence)
-        y = np.full(len(sequences), y_encoding[activity])
-        y_tensor = torch.Tensor(y).long()  # Use .long() for integer labels
-        lstm_input = np.array(sequences)
-        x_tensor = torch.Tensor(lstm_input)
-        x_tensor_list.append(x_tensor)
-        y_tensor_list.append(y_tensor)
-    x_combined = torch.cat(x_tensor_list, dim=0)
-    y_combined = torch.cat(y_tensor_list, dim=0)
-    x_combined = x_combined.view(-1, 3 * 3)
-    combined_dataset = TensorDataset(x_combined, y_combined)
-    torch.save(combined_dataset, f'dataset_fnn_{client}.pt')
-'''
 
-for client in df['client'].unique().tolist():
-    data = torch.load(f'dataset_fnn_{client}.pt')
-
+for client in range(1, 37):
+    data = torch.load(f'..\data\\fnn\dataset_fnn_{client}.pt')
     train_ratio = 0.8
     train_size = int(train_ratio * len(data))
     test_size = len(data) - train_size
@@ -176,7 +145,5 @@ for client in df['client'].unique().tolist():
     accuracy = accuracy_score(actual_labels, predictions)
     print(f'Accuracy client_{client}: {accuracy:.4f}')
 
-
-print('ok')
 
 

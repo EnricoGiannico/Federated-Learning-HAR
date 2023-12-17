@@ -1,0 +1,12 @@
+
+setup:
+  data_path: .
+  n_clients: 6
+  learning_rate: 0.1
+  num_of_epochs: 50
+  batch_size: 32
+  save_dir: ..\models
+  random_clients: 0.5
+  to_save: true
+  federated_runs: 5
+  network_type: 'fnn'
