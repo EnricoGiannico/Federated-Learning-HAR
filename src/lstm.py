@@ -27,6 +27,33 @@ class LSTMClassifier(nn.Module):
         out = self.fc(out)
         return out
 
+    def get_state(self):
+        lstm_dict = self.lstm.state_dict()
+        fc_dict = self.fc.state_dict()
+        dict_state = {
+            'lstm': lstm_dict,
+            'fc': fc_dict
+        }
+        return dict_state
+
+    def set_state(self, checkpoint):
+        lstm_state = checkpoint['lstm']
+        fc_state = checkpoint['fc']
+        self.lstm.load_state_dict(lstm_state)
+        self.fc.load_state_dict(fc_state)
+
+
+    def save_state(self, filename):
+        state = self.get_state()
+        torch.save(state, filename)
+
+    def load_state(self, filename):
+        checkpoint = torch.load(filename)
+        self.lstm.load_state_dict(checkpoint['lstm'])
+        self.fc.load_state_dict(checkpoint['fc'])
+
+
+
 for client in range(1, 37):
     data = torch.load(f'..\data\lstm\dataset_lstm_{client}.pt')
     train_ratio = 0.8
@@ -52,7 +79,7 @@ for client in range(1, 37):
     criterion = nn.CrossEntropyLoss()
 
     loss_values = []
-    num_epoch = 50
+    num_epoch = 15
 
     for epoch in range(num_epoch):
         epoch_loss = 0.0
@@ -69,7 +96,6 @@ for client in range(1, 37):
         average_loss = epoch_loss / len(train_loader)
         loss_values.append(average_loss)
         print(f'Epoch [{epoch + 1}/{num_epoch}], Loss: {average_loss:.4f}')
-
 
     # Plot the training loss
     plt.figure(figsize=(10, 5))

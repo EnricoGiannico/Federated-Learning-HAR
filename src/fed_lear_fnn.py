@@ -24,7 +24,8 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 from utils.architecture_class import Architecture
 
 IS_FEDERATED_ACTIVE = 'Y'
-PLOT = 'Y'
+PLOT = 'N'
+
 
 def load(conf_file):
     with open(conf_file) as f:
@@ -106,7 +107,6 @@ class Setup:
                     c.load_server_weights()
                     print(f"Setup: train client_{c.identifier}")
                     c.architecture.train(self.num_of_epochs)
-                    c.architecture.get_accuracy()
                     if PLOT == 'Y':
                         c.architecture.plot_losses()
     def create_clients(self):
@@ -215,11 +215,8 @@ if __name__ == '__main__':
 
     setup.run()
     for c in setup.server.list_of_clients:
-        #fig = c.architecture.plot_losses()
-        cm = c.architecture.correct(c.val_data[:][0], c.val_data[:][1])
-        sns.heatmap(cm, annot=True, fmt='d', cmap="Blues")
-        #plt.show()
-        accuracy = np.trace(cm) / np.sum(cm)
-        print(accuracy)
+        c.architecture.get_accuracy()
+        c.architecture.get_confusion_matrix()
+
     #if setup.to_save:
      #   setup.save()

@@ -1,33 +1,10 @@
 import numpy as np
-from sklearn.utils import shuffle
-from keras.datasets import mnist
 import torch
-from torch import nn
-from torch.utils.data import TensorDataset
-from torch.utils.data import DataLoader
-import argparse
-from sklearn.preprocessing import LabelEncoder
-from torch.utils.data import Dataset, TensorDataset, DataLoader
 import matplotlib.pyplot as plt
-import torch.optim as optim
-from collections import OrderedDict
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
-import pandas as pd
-
-plt.ion()
-
-
-import random
-import math
-from datetime import datetime
-import torch.nn.functional as F
-import yaml
-import os
-from operator import itemgetter
-import logging
-from torch.utils.data import DataLoader, TensorDataset, random_split
 from sklearn.metrics import accuracy_score
+
 
 class Architecture(object):
     def __init__(self, model, loss_fn, optimizer):
@@ -56,7 +33,6 @@ class Architecture(object):
         def perform_train_step(x, y):
             self.model.train()
             yhat = self.model(x)
-            #yhat = torch.argmax(nn.Softmax(dim=-1)(yhat), dim=1, keepdim=True).float()
             loss = self.loss_fn(yhat, y.squeeze().long())
             loss.backward()
             self.optimizer.step()
@@ -101,7 +77,7 @@ class Architecture(object):
 
         return loss
 
-    def set_seed(self, seed = 42):
+    def set_seed(self, seed=42):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         torch.manual_seed(seed)
@@ -122,7 +98,7 @@ class Architecture(object):
         fig = plt.figure(figsize=(10, 4))
         plt.plot(self.losses, label='Training Loss', c='b')
         if self.test_loader:
-            plt.plot(self.val_losses, label='Validation Loss', c='r')
+            plt.plot(self.val_losses, label='Test Loss', c='r')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
@@ -133,8 +109,6 @@ class Architecture(object):
         checkpoint = {
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict()
-            #'loss': self.losses,
-            #'val_loss': self.val_losses
         }
 
         torch.save(checkpoint, filename)
@@ -147,23 +121,24 @@ class Architecture(object):
             checkpoint['optimizer_state_dict']
         )
 
-        #self.total_epochs = checkpoint['epoch']
-        #self.losses = checkpoint['loss']
-        #self.val_losses = checkpoint['val_loss']
 
-        self.model.train()
 
-    def correct(self, x, y, threshold=.5):
+    def get_confusion_matrix(self):
         self.model.eval()
-        yhat = self.model(x.to(self.device))
-        y = y.to(self.device)
-        self.model.train()
 
+        predictions = []
+        actual_labels = []
 
-        n_samples, n_dims = yhat.shape
-        _, predicted = torch.max(yhat, 1)
-        cm = confusion_matrix(y, predicted)
-        return cm
+        with torch.no_grad():
+            for sequences, labels in self.test_loader:
+                outputs = self.model(sequences)
+                _, predicted = torch.max(outputs.data, 1)
+                predictions.extend(predicted.tolist())
+                actual_labels.extend(labels.tolist())
+
+        cm = confusion_matrix(actual_labels, predictions)
+        sns.heatmap(cm, annot=True, fmt='d', cmap="Blues")
+        plt.show()
 
     def get_accuracy(self):
         self.model.eval()
